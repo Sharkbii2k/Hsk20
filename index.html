@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Custom CSS cho hiệu ứng lật thẻ (Flip Card) */
+        /* Custom CSS cho hiệu ứng lật thẻ */
         .perspective-1000 { perspective: 1000px; }
         .transform-style-preserve-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
@@ -20,12 +20,11 @@
         /* Font Kaiti cho Hán Tự */
         .font-kaiti { font-family: "KaiTi", "STKaiti", "BiauKai", "楷体", serif; }
 
-        /* Ẩn scrollbar nhưng vẫn scroll được cho thẻ */
+        /* Ẩn scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<!-- Đổi h-screen thành h-[100dvh] để fix lỗi thanh công cụ trên Mobile -->
 <body class="bg-slate-50 text-slate-800 font-sans h-[100dvh] overflow-hidden flex">
 
     <!-- SIDEBAR (Menu Trái) -->
@@ -38,7 +37,6 @@
         </div>
 
         <div class="p-5 flex-1 overflow-y-auto">
-            <!-- Chọn Cấp Độ -->
             <label class="block text-sm font-semibold text-gray-600 mb-2">Chọn Cấp Độ HSK</label>
             <select id="levelSelect" onchange="changeLevel()" class="w-full border border-gray-300 rounded-lg p-2 mb-6 focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="1">HSK 1</option>
@@ -49,19 +47,16 @@
                 <option value="6">HSK 6</option>
             </select>
 
-            <!-- Cài đặt học tập -->
             <label class="block text-sm font-semibold text-gray-600 mb-2">Chế Độ Flashcard</label>
             <select id="modeSelect" class="w-full border border-gray-300 rounded-lg p-2 mb-6 focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="random">Ngẫu Nhiên (Ưu tiên từ chưa nhớ)</option>
                 <option value="sequential">Theo Thứ Tự</option>
             </select>
 
-            <!-- Nạp dữ liệu -->
             <button onclick="openImportModal()" class="w-full bg-indigo-50 text-indigo-600 border border-indigo-200 py-2 rounded-lg font-semibold hover:bg-indigo-100 transition-colors shadow-sm">
                 <i class="fa-solid fa-database mr-2"></i>Nạp Dữ Liệu Học
             </button>
         </div>
-
         <div class="p-4 border-t text-sm text-gray-500 text-center">
             Thiết kế riêng để luyện HSK
         </div>
@@ -69,9 +64,8 @@
 
     <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col h-full relative">
-        
         <!-- Header & Tabs -->
-        <header class="bg-white shadow-sm z-10">
+        <header class="bg-white shadow-sm z-10 shrink-0">
             <div class="flex items-center p-4 md:hidden">
                 <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900 focus:outline-none">
                     <i class="fa-solid fa-bars text-2xl"></i>
@@ -92,13 +86,13 @@
             </div>
         </header>
 
-        <!-- Tab Nội Dung Chính (Thêm pb-20 ở Mobile để nâng toàn bộ nội dung lên tránh thanh địa chỉ) -->
-        <div class="flex-1 overflow-hidden bg-slate-50 relative p-4 pb-20 md:p-8 md:pb-8 flex justify-center items-center">
+        <!-- Tab Nội Dung Chính (Tăng khoảng đệm pb-24 để nâng content lên cao hơn) -->
+        <div class="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 relative p-4 pb-24 md:p-8 flex justify-center items-center">
             
             <!-- TAB 1: FLASHCARD -->
-            <div id="view-flashcard" class="w-full max-w-md h-full max-h-[600px] flex flex-col view-section">
-                <!-- Thẻ Flashcard -->
-                <div class="flex-1 perspective-1000 cursor-pointer mb-6" onclick="flipCard()">
+            <div id="view-flashcard" class="w-full flex flex-col items-center justify-center view-section">
+                <!-- Thẻ Flashcard được ép thành Kích Thước Vuông (aspect-square) -->
+                <div class="w-full max-w-[340px] aspect-square perspective-1000 cursor-pointer mb-8" onclick="flipCard()">
                     <div id="flashcard-inner" class="relative w-full h-full transition-transform transform-style-preserve-3d shadow-xl rounded-2xl">
                         
                         <!-- MẶT TRƯỚC -->
@@ -108,23 +102,27 @@
                         </div>
 
                         <!-- MẶT SAU -->
-                        <div class="absolute w-full h-full bg-white rounded-2xl backface-hidden rotate-y-180 flex flex-col p-6 border-2 border-blue-50 overflow-y-auto no-scrollbar items-center text-center justify-center">
-                            <span id="fc-back-hanzi" class="text-6xl font-bold text-slate-800 mb-2 font-kaiti">汉字</span>
-                            <span id="fc-back-pinyin" class="text-xl text-blue-600 mb-3">pīnyīn</span>
-                            <span id="fc-back-meaning" class="text-lg font-semibold text-emerald-600 mb-6 bg-emerald-50 px-4 py-1 rounded-full">Nghĩa của từ</span>
+                        <div class="absolute w-full h-full bg-white rounded-2xl backface-hidden rotate-y-180 flex flex-col p-5 border-2 border-blue-50 overflow-y-auto no-scrollbar items-center text-center">
                             
-                            <div class="w-full bg-slate-50 rounded-xl p-4 text-left border border-slate-100 mt-auto">
-                                <p class="text-xs text-gray-400 mb-1 uppercase font-bold tracking-wider">Ví dụ</p>
-                                <p id="fc-ex-hanzi" class="text-xl text-slate-700 leading-relaxed break-words mb-2 font-kaiti">Câu ví dụ chữ Hán</p>
-                                <p id="fc-ex-pinyin" class="text-sm text-gray-500 mb-1">Pinyin câu ví dụ</p>
-                                <p id="fc-ex-meaning" class="text-sm text-gray-600 italic">Nghĩa câu ví dụ</p>
+                            <div class="mt-auto flex flex-col items-center w-full">
+                                <span id="fc-back-hanzi" class="text-5xl font-bold text-slate-800 mb-1 font-kaiti">汉字</span>
+                                <span id="fc-back-pinyin" class="text-lg text-blue-600 mb-2">pīnyīn</span>
+                                <span id="fc-back-meaning" class="text-base font-semibold text-emerald-600 mb-4 bg-emerald-50 px-3 py-1 rounded-full">Nghĩa của từ</span>
+                            </div>
+                            
+                            <!-- Khối Ví Dụ được co dãn cho vừa khung vuông -->
+                            <div class="w-full bg-slate-50 rounded-xl p-3 text-left border border-slate-100 mb-auto">
+                                <p class="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-wider">Ví dụ</p>
+                                <p id="fc-ex-hanzi" class="text-lg text-slate-700 leading-snug break-words mb-1 font-kaiti">Câu ví dụ chữ Hán</p>
+                                <p id="fc-ex-pinyin" class="text-xs text-gray-500 mb-1">Pinyin câu ví dụ</p>
+                                <p id="fc-ex-meaning" class="text-xs text-gray-600 italic">Nghĩa câu ví dụ</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Nút Đánh Giá -->
-                <div class="grid grid-cols-2 gap-4 h-14 shrink-0">
+                <!-- Nút Đánh Giá đi liền ngay dưới thẻ vuông -->
+                <div class="grid grid-cols-2 gap-4 w-full max-w-[340px] h-14 shrink-0">
                     <button onclick="markRemember(false)" class="bg-white border-2 border-rose-200 text-rose-600 rounded-xl font-bold hover:bg-rose-50 hover:border-rose-300 transition-colors shadow-sm">
                         <i class="fa-solid fa-xmark mr-2"></i>Chưa Nhớ
                     </button>
@@ -138,13 +136,11 @@
             <div id="view-typing" class="w-full max-w-lg hidden view-section flex-col items-center">
                 <div class="bg-white w-full rounded-2xl shadow-xl p-8 border border-gray-100 flex flex-col items-center text-center relative overflow-hidden">
                     
-                    <!-- LỚP PHỦ THÀNH CÔNG MỚI -->
                     <div id="typing-success" class="absolute inset-0 bg-emerald-500 flex flex-col items-center justify-center transform translate-y-full transition-transform duration-300 z-10 p-6 text-center">
                         <i class="fa-solid fa-circle-check text-white text-5xl mb-4 drop-shadow-md"></i>
                         <div class="text-white text-2xl font-bold mb-6">Chính Xác!</div>
                         
-                        <!-- Hiển thị lại từ vựng ôn tập -->
-                        <div class="bg-white/20 rounded-2xl p-6 w-full backdrop-blur-sm border border-white/30">
+                        <div class="bg-white/20 rounded-2xl p-6 w-full backdrop-blur-sm border border-white/30 shadow-inner">
                             <div id="success-hanzi" class="text-white text-6xl font-kaiti font-bold mb-3 drop-shadow-md">汉字</div>
                             <div id="success-pinyin" class="text-emerald-100 text-xl tracking-wider mb-2 font-medium">pīnyīn</div>
                             <div id="success-meaning" class="text-white text-lg font-semibold">Nghĩa</div>
@@ -177,7 +173,7 @@
             <!-- TAB 3: NGỮ PHÁP -->
             <div id="view-grammar" class="w-full max-w-3xl hidden h-full view-section">
                 <div class="bg-white rounded-2xl shadow-lg border border-gray-100 h-full flex flex-col">
-                    <div class="p-6 border-b bg-blue-50/50 rounded-t-2xl">
+                    <div class="p-6 border-b bg-blue-50/50 rounded-t-2xl shrink-0">
                         <h2 class="text-2xl font-bold text-blue-800">Cấu Trúc Ngữ Pháp <span id="grammar-level-title">HSK 1</span></h2>
                         <p class="text-gray-500 text-sm mt-1">Nắm vững ngữ pháp để giao tiếp tự nhiên</p>
                     </div>
@@ -198,16 +194,12 @@
                 <button onclick="closeImportModal()" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="p-6 flex-1 overflow-y-auto flex flex-col">
-                
                 <label class="block text-sm font-bold text-gray-700 mb-2">Loại dữ liệu muốn nạp:</label>
                 <select id="importType" onchange="updateImportHint()" class="w-full border-2 border-blue-200 rounded-lg p-2 mb-4 focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-blue-700 bg-blue-50">
                     <option value="vocab">Nạp Từ Vựng (Flashcard & Gõ phím)</option>
                     <option value="grammar">Nạp Ngữ Pháp</option>
                 </select>
-
-                <p id="import-hint" class="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                </p>
-                
+                <p id="import-hint" class="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200"></p>
                 <textarea id="import-text" class="w-full flex-1 min-h-[200px] border border-gray-300 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono" placeholder="Dán dữ liệu từ Excel vào đây..."></textarea>
             </div>
             <div class="p-4 border-t bg-gray-50 flex justify-end gap-3">
@@ -237,9 +229,7 @@
         let isCardFlipped = false;
         let typingTimeout;
 
-        function initApp() {
-            changeLevel();
-        }
+        function initApp() { changeLevel(); }
 
         function changeLevel() {
             currentLevel = document.getElementById('levelSelect').value;
@@ -253,10 +243,7 @@
 
         // --- FLASHCARD LOGIC ---
         function loadNextFlashcard(isReset = false) {
-            if(currentVocabList.length === 0) {
-                clearFlashcard();
-                return;
-            }
+            if(currentVocabList.length === 0) { clearFlashcard(); return; }
             
             const mode = document.getElementById('modeSelect').value;
             if(mode === 'random') {
@@ -265,10 +252,7 @@
                 let randomVal = Math.random() * totalWeight;
                 for(let i=0; i<currentVocabList.length; i++) {
                     randomVal -= currentVocabList[i].weight;
-                    if(randomVal <= 0) {
-                        currentWordIndex = i;
-                        break;
-                    }
+                    if(randomVal <= 0) { currentWordIndex = i; break; }
                 }
             } else {
                 if(isReset) currentWordIndex = 0;
@@ -277,7 +261,6 @@
                     if(currentWordIndex >= currentVocabList.length) currentWordIndex = 0;
                 }
             }
-
             renderFlashcard();
         }
 
@@ -285,23 +268,19 @@
             if(isCardFlipped) {
                 flipCard(); 
                 setTimeout(updateDOM, 300); 
-            } else {
-                updateDOM();
-            }
+            } else { updateDOM(); }
 
             function updateDOM() {
                 const word = currentVocabList[currentWordIndex];
                 if(!word) return;
 
                 document.getElementById('fc-front-hanzi').innerText = word.hanzi;
-                
                 document.getElementById('fc-back-hanzi').innerText = word.hanzi;
                 document.getElementById('fc-back-pinyin').innerText = word.pinyin;
                 document.getElementById('fc-back-meaning').innerText = word.meaning;
                 
                 const highlightedExHanzi = word.exHanzi.replace(new RegExp(word.hanzi, 'g'), `<strong class="text-blue-600">${word.hanzi}</strong>`);
                 document.getElementById('fc-ex-hanzi').innerHTML = highlightedExHanzi;
-                
                 document.getElementById('fc-ex-pinyin').innerText = word.exPinyin;
                 document.getElementById('fc-ex-meaning').innerText = word.exMeaning;
             }
@@ -309,11 +288,8 @@
 
         function flipCard() {
             const inner = document.getElementById('flashcard-inner');
-            if (isCardFlipped) {
-                inner.classList.remove('rotate-y-180');
-            } else {
-                inner.classList.add('rotate-y-180');
-            }
+            if (isCardFlipped) inner.classList.remove('rotate-y-180');
+            else inner.classList.add('rotate-y-180');
             isCardFlipped = !isCardFlipped;
         }
 
@@ -325,7 +301,6 @@
             
             const originalWord = appData[currentLevel].vocab.find(w => w.hanzi === word.hanzi);
             if(originalWord) originalWord.weight = word.weight;
-
             loadNextFlashcard();
         }
 
@@ -341,10 +316,7 @@
 
         // --- TYPING LOGIC ---
         function loadNextTyping(isReset = false) {
-            if(currentVocabList.length === 0) {
-                clearTyping();
-                return;
-            }
+            if(currentVocabList.length === 0) { clearTyping(); return; }
             if(isReset) currentWordIndex = 0; 
             else currentWordIndex = Math.floor(Math.random() * currentVocabList.length);
 
@@ -369,8 +341,6 @@
 
             if(val === word.hanzi) {
                 this.disabled = true; 
-                
-                // Cập nhật thông tin vào bảng Thành Công mới
                 document.getElementById('success-hanzi').innerText = word.hanzi;
                 document.getElementById('success-pinyin').innerText = word.pinyin;
                 document.getElementById('success-meaning').innerText = word.meaning;
@@ -378,19 +348,14 @@
                 document.getElementById('typing-success').classList.replace('translate-y-full', 'translate-y-0');
                 
                 clearTimeout(typingTimeout);
-                typingTimeout = setTimeout(() => {
-                    loadNextTyping();
-                }, 3000); 
+                typingTimeout = setTimeout(() => { loadNextTyping(); }, 3000); 
             }
         });
 
         function toggleHint() {
             const hintBox = document.getElementById('type-hint-box');
-            if(hintBox.classList.contains('opacity-0')) {
-                hintBox.classList.replace('opacity-0', 'opacity-100');
-            } else {
-                hintBox.classList.replace('opacity-100', 'opacity-0');
-            }
+            if(hintBox.classList.contains('opacity-0')) hintBox.classList.replace('opacity-0', 'opacity-100');
+            else hintBox.classList.replace('opacity-100', 'opacity-0');
         }
 
         function nextTypingWord() {
@@ -410,7 +375,7 @@
             const grammarData = appData[currentLevel].grammar;
 
             if(grammarData.length === 0) {
-                listDiv.innerHTML = `<div class="text-center text-gray-400 py-10 border-2 border-dashed border-gray-200 rounded-xl">Chưa có dữ liệu ngữ pháp. Hãy dùng nút <br><b>"Nạp Dữ Liệu Học"</b> ở menu để thêm.</div>`;
+                listDiv.innerHTML = `<div class="text-center text-gray-400 py-10 border-2 border-dashed border-gray-200 rounded-xl">Chưa có dữ liệu ngữ pháp.</div>`;
                 return;
             }
 
@@ -423,9 +388,7 @@
                         <h3 class="text-lg font-bold text-slate-800">${g.title}</h3>
                     </div>
                     <div class="mb-4 pl-11">
-                        <div class="bg-amber-50 text-amber-800 p-3 rounded-lg border border-amber-200 inline-block mb-2 font-semibold">
-                            ${g.structure}
-                        </div>
+                        <div class="bg-amber-50 text-amber-800 p-3 rounded-lg border border-amber-200 inline-block mb-2 font-semibold">${g.structure}</div>
                         <p class="text-slate-600">${g.desc}</p>
                     </div>
                     <div class="pl-11 border-t border-slate-100 pt-4 mt-2">
@@ -464,11 +427,8 @@
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            if(sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-            }
+            if(sidebar.classList.contains('-translate-x-full')) sidebar.classList.remove('-translate-x-full');
+            else sidebar.classList.add('-translate-x-full');
         }
 
         // --- IMPORT DATA ---
@@ -476,9 +436,9 @@
             const type = document.getElementById('importType').value;
             const hint = document.getElementById('import-hint');
             if (type === 'vocab') {
-                hint.innerHTML = `Copy 6 cột từ Excel theo thứ tự:<br><strong class="text-blue-600">Hán Tự | Pinyin | Nghĩa | Câu VD (Hán) | Câu VD (Pinyin) | Câu VD (Nghĩa)</strong>`;
+                hint.innerHTML = `Copy 6 cột từ Excel:<br><strong class="text-blue-600">Hán Tự | Pinyin | Nghĩa | Câu VD (Hán) | Câu VD (Pinyin) | Câu VD (Nghĩa)</strong>`;
             } else {
-                hint.innerHTML = `Copy 6 cột từ Excel theo thứ tự:<br><strong class="text-emerald-600">Tiêu đề | Cấu trúc | Giải thích | Câu VD (Hán) | Câu VD (Pinyin) | Câu VD (Nghĩa)</strong>`;
+                hint.innerHTML = `Copy 6 cột từ Excel:<br><strong class="text-emerald-600">Tiêu đề | Cấu trúc | Giải thích | Câu VD (Hán) | Câu VD (Pinyin) | Câu VD (Nghĩa)</strong>`;
             }
         }
 
@@ -507,29 +467,20 @@
                 if(parts.length >= 6) {
                     if (type === 'vocab') {
                         appData[currentLevel].vocab.push({
-                            hanzi: parts[0].trim(),
-                            pinyin: parts[1].trim(),
-                            meaning: parts[2].trim(),
-                            exHanzi: parts[3].trim(),
-                            exPinyin: parts[4].trim(),
-                            exMeaning: parts[5].trim(),
-                            weight: 10
+                            hanzi: parts[0].trim(), pinyin: parts[1].trim(), meaning: parts[2].trim(),
+                            exHanzi: parts[3].trim(), exPinyin: parts[4].trim(), exMeaning: parts[5].trim(), weight: 10
                         });
                     } else if (type === 'grammar') {
                         appData[currentLevel].grammar.push({
-                            title: parts[0].trim(),
-                            structure: parts[1].trim(),
-                            desc: parts[2].trim(),
-                            exHanzi: parts[3].trim(),
-                            exPinyin: parts[4].trim(),
-                            exMeaning: parts[5].trim()
+                            title: parts[0].trim(), structure: parts[1].trim(), desc: parts[2].trim(),
+                            exHanzi: parts[3].trim(), exPinyin: parts[4].trim(), exMeaning: parts[5].trim()
                         });
                     }
                     importedCount++;
                 }
             });
 
-            alert(`Đã nạp thành công ${importedCount} ${type === 'vocab' ? 'Từ vựng' : 'Cấu trúc ngữ pháp'} vào HSK ${currentLevel}!`);
+            alert(`Đã nạp thành công ${importedCount} ${type === 'vocab' ? 'Từ vựng' : 'Ngữ pháp'} vào HSK ${currentLevel}!`);
             closeImportModal();
             changeLevel(); 
         }
