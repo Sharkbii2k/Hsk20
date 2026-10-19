@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSK Mastery - Flashcard & Typing</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Custom CSS cho hiệu ứng lật thẻ (Flip Card) */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .transition-transform { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        
+        /* Font Kaiti cho Hán Tự */
+        .font-kaiti { font-family: "KaiTi", "STKaiti", "BiauKai", "楷体", serif; }
+
+        /* Ẩn scrollbar nhưng vẫn scroll được cho thẻ */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden flex">
+
+    <!-- SIDEBAR (Menu Trái) -->
+    <aside id="sidebar" class="bg-white w-64 shadow-xl flex-shrink-0 h-full flex flex-col transition-transform duration-300 absolute z-20 transform -translate-x-full md:relative md:translate-x-0">
+        <div class="p-5 flex justify-between items-center border-b">
+            <h1 class="text-2xl font-bold text-blue-600"><i class="fa-solid fa-dragon mr-2"></i>HSK Học Tập</h1>
+            <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-gray-800">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-5 flex-1 overflow-y-auto">
+            <!-- Chọn Cấp Độ -->
+            <label class="block text-sm font-semibold text-gray-600 mb-2">Chọn Cấp Độ HSK</label>
+            <select id="levelSelect" onchange="changeLevel()" class="w-full border border-gray-300 rounded-lg p-2 mb-6 focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="1">HSK 1</option>
+                <option value="2">HSK 2</option>
+                <option value="3">HSK 3</option>
+                <option value="4">HSK 4</option>
+                <option value="5">HSK 5</option>
+                <option value="6">HSK 6</option>
+            </select>
+
+            <!-- Cài đặt học tập -->
+            <label class="block text-sm font-semibold text-gray-600 mb-2">Chế Độ Flashcard</label>
+            <select id="modeSelect" class="w-full border border-gray-300 rounded-lg p-2 mb-6 focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="random">Ngẫu Nhiên (Ưu tiên từ chưa nhớ)</option>
+                <option value="sequential">Theo Thứ Tự</option>
+            </select>
+
+            <!-- Nạp dữ liệu -->
+            <button onclick="openImportModal()" class="w-full bg-indigo-50 text-indigo-600 border border-indigo-200 py-2 rounded-lg font-semibold hover:bg-indigo-100 transition-colors shadow-sm">
+                <i class="fa-solid fa-database mr-2"></i>Nạp Dữ Liệu Học
+            </button>
+        </div>
+
+        <div class="p-4 border-t text-sm text-gray-500 text-center">
+            Thiết kế riêng để luyện HSK
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-full relative">
+        
+        <!-- Header & Tabs -->
+        <header class="bg-white shadow-sm z-10">
+            <div class="flex items-center p-4 md:hidden">
+                <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900 focus:outline-none">
+                    <i class="fa-solid fa-bars text-2xl"></i>
+                </button>
+                <h1 class="ml-4 text-xl font-bold text-blue-600">HSK Học Tập</h1>
+            </div>
+            
+            <div class="flex justify-center border-b">
+                <button onclick="switchTab('flashcard')" id="tab-flashcard" class="tab-btn px-6 py-4 font-semibold text-blue-600 border-b-2 border-blue-600">
+                    <i class="fa-regular fa-clone mr-2"></i>Flashcard
+                </button>
+                <button onclick="switchTab('typing')" id="tab-typing" class="tab-btn px-6 py-4 font-semibold text-gray-500 hover:text-blue-500">
+                    <i class="fa-regular fa-keyboard mr-2"></i>Gõ Phím
+                </button>
+                <button onclick="switchTab('grammar')" id="tab-grammar" class="tab-btn px-6 py-4 font-semibold text-gray-500 hover:text-blue-500">
+                    <i class="fa-solid fa-book mr-2"></i>Ngữ Pháp
+                </button>
+            </div>
+        </header>
+
+        <!-- Tab Nội Dung Chính -->
+        <div class="flex-1 overflow-hidden bg-slate-50 relative p-4 md:p-8 flex justify-center items-center">
+            
+            <!-- TAB 1: FLASHCARD -->
+            <div id="view-flashcard" class="w-full max-w-md h-full max-h-[600px] flex flex-col view-section">
+                <!-- Thẻ Flashcard -->
+                <div class="flex-1 perspective-1000 cursor-pointer mb-4" onclick="flipCard()">
+                    <div id="flashcard-inner" class="relative w-full h-full transition-transform transform-style-preserve-3d shadow-xl rounded-2xl">
+                        
+                        <!-- MẶT TRƯỚC (Đã bỏ Pinyin, dùng Font Kaiti) -->
+                        <div class="absolute w-full h-full bg-white rounded-2xl backface-hidden flex flex-col items-center justify-center p-6 border-2 border-blue-50">
+                            <span id="fc-front-hanzi" class="text-8xl font-bold text-slate-800 font-kaiti">汉字</span>
+                            <div class="absolute bottom-4 text-sm text-gray-400"><i class="fa-solid fa-hand-pointer mr-1"></i>Chạm để lật</div>
+                        </div>
+
+                        <!-- MẶT SAU -->
+                        <div class="absolute w-full h-full bg-white rounded-2xl backface-hidden rotate-y-180 flex flex-col p-6 border-2 border-blue-50 overflow-y-auto no-scrollbar items-center text-center justify-center">
+                            <span id="fc-back-hanzi" class="text-6xl font-bold text-slate-800 mb-2 font-kaiti">汉字</span>
+                            <span id="fc-back-pinyin" class="text-xl text-blue-600 mb-3">pīnyīn</span>
+                            <span id="fc-back-meaning" class="text-lg font-semibold text-emerald-600 mb-6 bg-emerald-50 px-4 py-1 rounded-full">Nghĩa của từ</span>
+                            
+                            <div class="w-full bg-slate-50 rounded-xl p-4 text-left border border-slate-100 mt-auto">
+                                <p class="text-xs text-gray-400 mb-1 uppercase font-bold tracking-wider">Ví dụ</p>
+                                <p id="fc-ex-hanzi" class="text-xl text-slate-700 leading-relaxed break-words mb-2 font-kaiti">Câu ví dụ chữ Hán</p>
+                                <p id="fc-ex-pinyin" class="text-sm text-gray-500 mb-1">Pinyin câu ví dụ</p>
+                                <p id="fc-ex-meaning" class="text-sm text-gray-600 italic">Nghĩa câu ví dụ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nút Đánh Giá -->
+                <div class="grid grid-cols-2 gap-4 h-14 shrink-0">
+                    <button onclick="markRemember(false)" class="bg-white border-2 border-rose-200 text-rose-600 rounded-xl font-bold hover:bg-rose-50 hover:border-rose-300 transition-colors shadow-sm">
+                        <i class="fa-solid fa-xmark mr-2"></i>Chưa Nhớ
+                    </button>
+                    <button onclick="markRemember(true)" class="bg-white border-2 border-emerald-200 text-emerald-600 rounded-xl font-bold hover:bg-emerald-50 hover:border-emerald-300 transition-colors shadow-sm">
+                        <i class="fa-solid fa-check mr-2"></i>Đã Nhớ
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: GÕ PHÍM -->
+            <div id="view-typing" class="w-full max-w-lg hidden view-section flex-col items-center">
+                <div class="bg-white w-full rounded-2xl shadow-xl p-8 border border-gray-100 flex flex-col items-center text-center relative overflow-hidden">
+                    <div id="typing-success" class="absolute inset-0 bg-emerald-500 flex items-center justify-center transform translate-y-full transition-transform duration-300 z-10">
+                        <div class="text-white text-3xl font-bold"><i class="fa-solid fa-circle-check mr-3"></i>Chính Xác!</div>
+                    </div>
+
+                    <span class="text-sm font-semibold text-blue-500 bg-blue-50 px-3 py-1 rounded-full mb-6">Luyện Gõ Phím</span>
+                    <span id="type-meaning" class="text-2xl font-bold text-slate-800 mb-2">Nghĩa của từ</span>
+                    
+                    <div id="type-hint-box" class="h-8 mb-6 transition-opacity opacity-0">
+                        <span id="type-pinyin" class="text-lg text-gray-500 tracking-wide">pīnyīn</span>
+                    </div>
+
+                    <div class="w-full relative">
+                        <input type="text" id="type-input" placeholder="Gõ Hán tự..." autocomplete="off"
+                            class="w-full text-center text-4xl p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800 font-kaiti">
+                    </div>
+
+                    <div class="flex justify-between w-full mt-6">
+                        <button onclick="toggleHint()" class="text-gray-400 hover:text-blue-500 text-sm font-semibold transition-colors">
+                            <i class="fa-solid fa-eye mr-1"></i>Hiện Pinyin
+                        </button>
+                        <button onclick="nextTypingWord()" class="text-gray-400 hover:text-gray-700 text-sm font-semibold transition-colors">
+                            Bỏ qua <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: NGỮ PHÁP -->
+            <div id="view-grammar" class="w-full max-w-3xl hidden h-full view-section">
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 h-full flex flex-col">
+                    <div class="p-6 border-b bg-blue-50/50 rounded-t-2xl">
+                        <h2 class="text-2xl font-bold text-blue-800">Cấu Trúc Ngữ Pháp <span id="grammar-level-title">HSK 1</span></h2>
+                        <p class="text-gray-500 text-sm mt-1">Nắm vững ngữ pháp để giao tiếp tự nhiên</p>
+                    </div>
+                    <div id="grammar-list" class="p-6 overflow-y-auto flex-1 space-y-6 no-scrollbar">
+                        <!-- Render ngữ pháp vào đây -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL NẠP DỮ LIỆU -->
+    <div id="importModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-lg text-slate-800">Nạp Dữ Liệu Học Tập</h3>
+                <button onclick="closeImportModal()" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto flex flex-col">
+                
+                <label class="block text-sm font-bold text-gray-700 mb-2">Loại dữ liệu muốn nạp:</label>
+                <select id="importType" onchange="updateImportHint()" class="w-full border-2 border-blue-200 rounded-lg p-2 mb-4 focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-blue-700 bg-blue-50">
+                    <option value="vocab">Nạp Từ Vựng (Flashcard & Gõ phím)</option>
+                    <option value="grammar">Nạp Ngữ Pháp</option>
+                </select>
+
+                <p id="import-hint" class="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <!-- Text hint sẽ được JS sinh ra dựa vào Select -->
+                </p>
+                
+                <textarea id="import-text" class="w-full flex-1 min-h-[200px] border border-gray-300 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono" placeholder="Dán dữ liệu từ Excel vào đây..."></textarea>
+            </div>
+            <div class="p-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeImportModal()" class="px-5 py-2 text-gray-600 font-semibold hover:bg-gray-200 rounded-lg">Hủy</button>
+                <button onclick="processImportData()" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-md"><i class="fa-solid fa-save mr-2"></i>Lưu Dữ Liệu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP LOGIC -->
+    <script>
+        // --- 1. DỮ LIỆU MẪU (HSK 1) ---
+        let appData = {
+            "1": {
+                vocab: [
+                    { hanzi: "我", pinyin: "wǒ", meaning: "Tôi, tớ, mình", exHanzi: "我是学生。", exPinyin: "Wǒ shì xuésheng.", exMeaning: "Tôi là học sinh.", weight: 10 }
+                ],
+                grammar: [
+                    { title: "Đại từ nhân xưng", structure: "我 (Tôi), 你 (Bạn), 他/她 (Anh ấy/Cô ấy)", desc: "Dùng để xưng hô trong giao tiếp.", exHanzi: "你好！", exPinyin: "Nǐ hǎo!", exMeaning: "Chào bạn!" }
+                ]
+            }
+        };
+        for(let i=2; i<=6; i++) appData[i.toString()] = { vocab: [], grammar: [] };
+
+        // --- 2. BIẾN TRẠNG THÁI ---
+        let currentLevel = "1";
+        let currentVocabList = [];
+        let currentWordIndex = 0;
+        let isCardFlipped = false;
+        let typingTimeout;
+
+        // --- 3. CORE FUNCTIONS ---
+        function initApp() {
+            changeLevel();
+        }
+
+        function changeLevel() {
+            currentLevel = document.getElementById('levelSelect').value;
+            currentVocabList = [...appData[currentLevel].vocab];
+            document.getElementById('grammar-level-title').innerText = `HSK ${currentLevel}`;
+            
+            loadNextFlashcard(true); 
+            loadNextTyping(true);
+            renderGrammar();
+        }
+
+        // --- FLASHCARD LOGIC ---
+        function loadNextFlashcard(isReset = false) {
+            if(currentVocabList.length === 0) {
+                clearFlashcard();
+                return;
+            }
+            
+            const mode = document.getElementById('modeSelect').value;
+            if(mode === 'random') {
+                let totalWeight = currentVocabList.reduce((sum, word) => sum + word.weight, 0);
+                if (totalWeight === 0) totalWeight = 1; 
+                let randomVal = Math.random() * totalWeight;
+                for(let i=0; i<currentVocabList.length; i++) {
+                    randomVal -= currentVocabList[i].weight;
+                    if(randomVal <= 0) {
+                        currentWordIndex = i;
+                        break;
+                    }
+                }
+            } else {
+                if(isReset) currentWordIndex = 0;
+                else {
+                    currentWordIndex++;
+                    if(currentWordIndex >= currentVocabList.length) currentWordIndex = 0;
+                }
+            }
+
+            renderFlashcard();
+        }
+
+        function renderFlashcard() {
+            if(isCardFlipped) {
+                flipCard(); 
+                setTimeout(updateDOM, 300); 
+            } else {
+                updateDOM();
+            }
+
+            function updateDOM() {
+                const word = currentVocabList[currentWordIndex];
+                if(!word) return;
+
+                // Cập nhật mặt trước (Đã xóa Pinyin)
+                document.getElementById('fc-front-hanzi').innerText = word.hanzi;
+                
+                // Cập nhật mặt sau
+                document.getElementById('fc-back-hanzi').innerText = word.hanzi;
+                document.getElementById('fc-back-pinyin').innerText = word.pinyin;
+                document.getElementById('fc-back-meaning').innerText = word.meaning;
+                
+                const highlightedExHanzi = word.exHanzi.replace(new RegExp(word.hanzi, 'g'), `<strong class="text-blue-600">${word.hanzi}</strong>`);
+                document.getElementById('fc-ex-hanzi').innerHTML = highlightedExHanzi;
+                
+                document.getElementById('fc-ex-pinyin').innerText = word.exPinyin;
+                document.getElementById('fc-ex-meaning').innerText = word.exMeaning;
+            }
+        }
+
+        function flipCard() {
+            const inner = document.getElementById('flashcard-inner');
+            if (isCardFlipped) {
+                inner.classList.remove('rotate-y-180');
+            } else {
+                inner.classList.add('rotate-y-180');
+            }
+            isCardFlipped = !isCardFlipped;
+        }
+
+        function markRemember(remembered) {
+            if(currentVocabList.length === 0) return;
+            const word = currentVocabList[currentWordIndex];
+            if(remembered) word.weight = 1; 
+            else word.weight = 20; 
+            
+            const originalWord = appData[currentLevel].vocab.find(w => w.hanzi === word.hanzi);
+            if(originalWord) originalWord.weight = word.weight;
+
+            loadNextFlashcard();
+        }
+
+        function clearFlashcard() {
+            document.getElementById('fc-front-hanzi').innerText = "Trống";
+            document.getElementById('fc-back-hanzi').innerText = "Trống";
+            document.getElementById('fc-back-pinyin').innerText = "-";
+            document.getElementById('fc-back-meaning').innerText = "Vui lòng nạp dữ liệu";
+            document.getElementById('fc-ex-hanzi').innerText = "";
+            document.getElementById('fc-ex-pinyin').innerText = "";
+            document.getElementById('fc-ex-meaning').innerText = "";
+        }
+
+        // --- TYPING LOGIC ---
+        function loadNextTyping(isReset = false) {
+            if(currentVocabList.length === 0) {
+                clearTyping();
+                return;
+            }
+            if(isReset) currentWordIndex = 0; 
+            else currentWordIndex = Math.floor(Math.random() * currentVocabList.length);
+
+            const word = currentVocabList[currentWordIndex];
+            document.getElementById('type-meaning').innerText = word.meaning;
+            document.getElementById('type-pinyin').innerText = word.pinyin;
+            
+            document.getElementById('type-hint-box').classList.remove('opacity-100');
+            document.getElementById('type-hint-box').classList.add('opacity-0');
+            const inputField = document.getElementById('type-input');
+            inputField.value = "";
+            inputField.disabled = false;
+            inputField.focus();
+
+            document.getElementById('typing-success').classList.replace('translate-y-0', 'translate-y-full');
+        }
+
+        document.getElementById('type-input').addEventListener('input', function(e) {
+            const val = e.target.value.trim();
+            const word = currentVocabList[currentWordIndex];
+            if(!word) return;
+
+            if(val === word.hanzi) {
+                this.disabled = true; 
+                document.getElementById('typing-success').classList.replace('translate-y-full', 'translate-y-0');
+                
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    loadNextTyping();
+                }, 3000); 
+            }
+        });
+
+        function toggleHint() {
+            const hintBox = document.getElementById('type-hint-box');
+            if(hintBox.classList.contains('opacity-0')) {
+                hintBox.classList.replace('opacity-0', 'opacity-100');
+            } else {
+                hintBox.classList.replace('opacity-100', 'opacity-0');
+            }
+        }
+
+        function nextTypingWord() {
+            clearTimeout(typingTimeout);
+            loadNextTyping();
+        }
+
+        function clearTyping() {
+            document.getElementById('type-meaning').innerText = "Vui lòng nạp dữ liệu";
+            document.getElementById('type-input').disabled = true;
+        }
+
+        // --- GRAMMAR LOGIC ---
+        function renderGrammar() {
+            const listDiv = document.getElementById('grammar-list');
+            listDiv.innerHTML = '';
+            const grammarData = appData[currentLevel].grammar;
+
+            if(grammarData.length === 0) {
+                listDiv.innerHTML = `<div class="text-center text-gray-400 py-10 border-2 border-dashed border-gray-200 rounded-xl">Chưa có dữ liệu ngữ pháp. Hãy dùng nút <br><b>"Nạp Dữ Liệu Học"</b> ở menu để thêm.</div>`;
+                return;
+            }
+
+            grammarData.forEach((g, index) => {
+                const item = document.createElement('div');
+                item.className = "bg-white border-2 border-slate-100 rounded-xl p-5 hover:border-blue-200 transition-colors shadow-sm";
+                item.innerHTML = `
+                    <div class="flex items-center mb-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mr-3">${index + 1}</div>
+                        <h3 class="text-lg font-bold text-slate-800">${g.title}</h3>
+                    </div>
+                    <div class="mb-4 pl-11">
+                        <div class="bg-amber-50 text-amber-800 p-3 rounded-lg border border-amber-200 inline-block mb-2 font-semibold">
+                            ${g.structure}
+                        </div>
+                        <p class="text-slate-600">${g.desc}</p>
+                    </div>
+                    <div class="pl-11 border-t border-slate-100 pt-4 mt-2">
+                        <p class="text-xs text-gray-400 uppercase font-bold mb-2">Ví Dụ</p>
+                        <p class="text-xl text-slate-800 font-medium font-kaiti">${g.exHanzi}</p>
+                        <p class="text-sm text-gray-500">${g.exPinyin}</p>
+                        <p class="text-sm text-gray-600 italic mt-1">${g.exMeaning}</p>
+                    </div>
+                `;
+                listDiv.appendChild(item);
+            });
+        }
+
+        // --- UI & TAB CONTROL ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                btn.classList.add('text-gray-500');
+            });
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.remove('text-gray-500');
+            activeBtn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+
+            document.querySelectorAll('.view-section').forEach(sec => {
+                sec.classList.add('hidden');
+                sec.classList.remove('flex'); 
+            });
+            
+            const activeSec = document.getElementById(`view-${tabId}`);
+            activeSec.classList.remove('hidden');
+            if(tabId === 'flashcard' || tabId === 'typing') {
+                activeSec.classList.add('flex'); 
+                if(tabId === 'typing' && currentVocabList.length > 0) document.getElementById('type-input').focus();
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if(sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+            }
+        }
+
+        // --- IMPORT DATA ---
+        function updateImportHint() {
+            const type = document.getElementById('importType').value;
+            const hint = document.getElementById('import-hint');
+            if (type === 'vocab') {
+                hint.innerHTML = `Copy 6 cột từ Excel theo thứ tự:<br><strong class="text-blue-600">Hán Tự | Pinyin | Nghĩa | Câu VD (Hán) | Câu VD (Pinyin) | Câu VD (Nghĩa)</strong>`;
+            } else {
+                hint.innerHTML = `Copy 6 cột từ Excel theo thứ tự:<br><strong class="text-emerald-600">Tiêu đề | Cấu trúc | Giải thích | Câu VD (Hán) | Câu VD (Pinyin) | Câu VD (Nghĩa)</strong>`;
+            }
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+            document.getElementById('importModal').classList.add('flex');
+            document.getElementById('import-text').value = '';
+            updateImportHint(); 
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+            document.getElementById('importModal').classList.remove('flex');
+        }
+
+        function processImportData() {
+            const text = document.getElementById('import-text').value.trim();
+            if(!text) return closeImportModal();
+
+            const type = document.getElementById('importType').value;
+            const lines = text.split('\n');
+            let importedCount = 0;
+
+            lines.forEach(line => {
+                const parts = line.split('\t'); 
+                if(parts.length >= 6) {
+                    if (type === 'vocab') {
+                        appData[currentLevel].vocab.push({
+                            hanzi: parts[0].trim(),
+                            pinyin: parts[1].trim(),
+                            meaning: parts[2].trim(),
+                            exHanzi: parts[3].trim(),
+                            exPinyin: parts[4].trim(),
+                            exMeaning: parts[5].trim(),
+                            weight: 10
+                        });
+                    } else if (type === 'grammar') {
+                        appData[currentLevel].grammar.push({
+                            title: parts[0].trim(),
+                            structure: parts[1].trim(),
+                            desc: parts[2].trim(),
+                            exHanzi: parts[3].trim(),
+                            exPinyin: parts[4].trim(),
+                            exMeaning: parts[5].trim()
+                        });
+                    }
+                    importedCount++;
+                }
+            });
+
+            alert(`Đã nạp thành công ${importedCount} ${type === 'vocab' ? 'Từ vựng' : 'Cấu trúc ngữ pháp'} vào HSK ${currentLevel}!`);
+            closeImportModal();
+            changeLevel(); 
+        }
+
+        // Khởi động
+        initApp();
+        switchTab('flashcard');
+
+    </script>
+</body>
+</html>
