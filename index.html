@@ -25,7 +25,8 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden flex">
+<!-- Đổi h-screen thành h-[100dvh] để fix lỗi thanh công cụ trên Mobile -->
+<body class="bg-slate-50 text-slate-800 font-sans h-[100dvh] overflow-hidden flex">
 
     <!-- SIDEBAR (Menu Trái) -->
     <aside id="sidebar" class="bg-white w-64 shadow-xl flex-shrink-0 h-full flex flex-col transition-transform duration-300 absolute z-20 transform -translate-x-full md:relative md:translate-x-0">
@@ -91,16 +92,16 @@
             </div>
         </header>
 
-        <!-- Tab Nội Dung Chính -->
-        <div class="flex-1 overflow-hidden bg-slate-50 relative p-4 md:p-8 flex justify-center items-center">
+        <!-- Tab Nội Dung Chính (Thêm pb-20 ở Mobile để nâng toàn bộ nội dung lên tránh thanh địa chỉ) -->
+        <div class="flex-1 overflow-hidden bg-slate-50 relative p-4 pb-20 md:p-8 md:pb-8 flex justify-center items-center">
             
             <!-- TAB 1: FLASHCARD -->
             <div id="view-flashcard" class="w-full max-w-md h-full max-h-[600px] flex flex-col view-section">
                 <!-- Thẻ Flashcard -->
-                <div class="flex-1 perspective-1000 cursor-pointer mb-4" onclick="flipCard()">
+                <div class="flex-1 perspective-1000 cursor-pointer mb-6" onclick="flipCard()">
                     <div id="flashcard-inner" class="relative w-full h-full transition-transform transform-style-preserve-3d shadow-xl rounded-2xl">
                         
-                        <!-- MẶT TRƯỚC (Đã bỏ Pinyin, dùng Font Kaiti) -->
+                        <!-- MẶT TRƯỚC -->
                         <div class="absolute w-full h-full bg-white rounded-2xl backface-hidden flex flex-col items-center justify-center p-6 border-2 border-blue-50">
                             <span id="fc-front-hanzi" class="text-8xl font-bold text-slate-800 font-kaiti">汉字</span>
                             <div class="absolute bottom-4 text-sm text-gray-400"><i class="fa-solid fa-hand-pointer mr-1"></i>Chạm để lật</div>
@@ -136,8 +137,18 @@
             <!-- TAB 2: GÕ PHÍM -->
             <div id="view-typing" class="w-full max-w-lg hidden view-section flex-col items-center">
                 <div class="bg-white w-full rounded-2xl shadow-xl p-8 border border-gray-100 flex flex-col items-center text-center relative overflow-hidden">
-                    <div id="typing-success" class="absolute inset-0 bg-emerald-500 flex items-center justify-center transform translate-y-full transition-transform duration-300 z-10">
-                        <div class="text-white text-3xl font-bold"><i class="fa-solid fa-circle-check mr-3"></i>Chính Xác!</div>
+                    
+                    <!-- LỚP PHỦ THÀNH CÔNG MỚI -->
+                    <div id="typing-success" class="absolute inset-0 bg-emerald-500 flex flex-col items-center justify-center transform translate-y-full transition-transform duration-300 z-10 p-6 text-center">
+                        <i class="fa-solid fa-circle-check text-white text-5xl mb-4 drop-shadow-md"></i>
+                        <div class="text-white text-2xl font-bold mb-6">Chính Xác!</div>
+                        
+                        <!-- Hiển thị lại từ vựng ôn tập -->
+                        <div class="bg-white/20 rounded-2xl p-6 w-full backdrop-blur-sm border border-white/30">
+                            <div id="success-hanzi" class="text-white text-6xl font-kaiti font-bold mb-3 drop-shadow-md">汉字</div>
+                            <div id="success-pinyin" class="text-emerald-100 text-xl tracking-wider mb-2 font-medium">pīnyīn</div>
+                            <div id="success-meaning" class="text-white text-lg font-semibold">Nghĩa</div>
+                        </div>
                     </div>
 
                     <span class="text-sm font-semibold text-blue-500 bg-blue-50 px-3 py-1 rounded-full mb-6">Luyện Gõ Phím</span>
@@ -195,7 +206,6 @@
                 </select>
 
                 <p id="import-hint" class="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <!-- Text hint sẽ được JS sinh ra dựa vào Select -->
                 </p>
                 
                 <textarea id="import-text" class="w-full flex-1 min-h-[200px] border border-gray-300 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono" placeholder="Dán dữ liệu từ Excel vào đây..."></textarea>
@@ -209,7 +219,6 @@
 
     <!-- MAIN APP LOGIC -->
     <script>
-        // --- 1. DỮ LIỆU MẪU (HSK 1) ---
         let appData = {
             "1": {
                 vocab: [
@@ -222,14 +231,12 @@
         };
         for(let i=2; i<=6; i++) appData[i.toString()] = { vocab: [], grammar: [] };
 
-        // --- 2. BIẾN TRẠNG THÁI ---
         let currentLevel = "1";
         let currentVocabList = [];
         let currentWordIndex = 0;
         let isCardFlipped = false;
         let typingTimeout;
 
-        // --- 3. CORE FUNCTIONS ---
         function initApp() {
             changeLevel();
         }
@@ -286,10 +293,8 @@
                 const word = currentVocabList[currentWordIndex];
                 if(!word) return;
 
-                // Cập nhật mặt trước (Đã xóa Pinyin)
                 document.getElementById('fc-front-hanzi').innerText = word.hanzi;
                 
-                // Cập nhật mặt sau
                 document.getElementById('fc-back-hanzi').innerText = word.hanzi;
                 document.getElementById('fc-back-pinyin').innerText = word.pinyin;
                 document.getElementById('fc-back-meaning').innerText = word.meaning;
@@ -364,6 +369,12 @@
 
             if(val === word.hanzi) {
                 this.disabled = true; 
+                
+                // Cập nhật thông tin vào bảng Thành Công mới
+                document.getElementById('success-hanzi').innerText = word.hanzi;
+                document.getElementById('success-pinyin').innerText = word.pinyin;
+                document.getElementById('success-meaning').innerText = word.meaning;
+
                 document.getElementById('typing-success').classList.replace('translate-y-full', 'translate-y-0');
                 
                 clearTimeout(typingTimeout);
@@ -523,7 +534,6 @@
             changeLevel(); 
         }
 
-        // Khởi động
         initApp();
         switchTab('flashcard');
 
